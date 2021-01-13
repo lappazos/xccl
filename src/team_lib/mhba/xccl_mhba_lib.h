@@ -12,6 +12,7 @@
 #include <infiniband/verbs.h>
 #include <infiniband/mlx5dv.h>
 #include <ucs/memory/rcache.h>
+#include <sys/time.h>
 
 #define MAX_OUTSTANDING_OPS 1 //todo change - according to limitations (52 top)
 #define SEQ_INDEX(_seq_num) ((_seq_num) % MAX_OUTSTANDING_OPS)
@@ -143,6 +144,11 @@ typedef struct xccl_mhba_team {
     uint64_t             max_msg_size;
     xccl_mhba_node_t     node;
     xccl_mhba_net_t      net;
+    struct timeval                  fanin[10000];
+    struct timeval                  block[10000];
+    struct timeval                  send[10000];
+    struct timeval                  fanout[10000];
+    struct timeval                  end[10000];
     int                  sequence_number;
     int                  op_busy[MAX_OUTSTANDING_OPS];
     int                  cq_completions[MAX_OUTSTANDING_OPS];

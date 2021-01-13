@@ -69,6 +69,7 @@ static xccl_status_t xccl_mhba_reg_fanin_start(xccl_coll_task_t *task)
     xccl_mhba_task_t     *self    = ucs_derived_of(task, xccl_mhba_task_t);
     xccl_mhba_coll_req_t *request = self->req;
     xccl_mhba_team_t     *team    = request->team;
+    gettimeofday(&team->fanin[request->seq_num], NULL);
 
     xccl_mhba_debug("register memory buffers");
 
@@ -153,6 +154,7 @@ static xccl_status_t xccl_mhba_fanout_start(xccl_coll_task_t *task)
     xccl_mhba_task_t     *self    = ucs_derived_of(task, xccl_mhba_task_t);
     xccl_mhba_coll_req_t *request = self->req;
     xccl_mhba_team_t     *team    = request->team;
+    gettimeofday(&team->fanout[request->seq_num], NULL);
     xccl_mhba_debug("fanout start");
     /* start task if completion event received */
     task->state = XCCL_TASK_STATE_INPROGRESS;
@@ -188,6 +190,7 @@ static xccl_status_t xccl_mhba_asr_barrier_start(xccl_coll_task_t *task)
     xccl_mhba_task_t     *self    = ucs_derived_of(task, xccl_mhba_task_t);
     xccl_mhba_coll_req_t *request = self->req;
     xccl_mhba_team_t     *team    = request->team;
+    gettimeofday(&team->block[request->seq_num], NULL);
     xccl_mhba_debug("asr barrier start");
 
     if(request->need_update_mkey) {
@@ -421,6 +424,7 @@ static xccl_status_t xccl_mhba_send_blocks_start(xccl_coll_task_t *task)
     xccl_mhba_task_t     *self      = ucs_derived_of(task, xccl_mhba_task_t);
     xccl_mhba_coll_req_t *request   = self->req;
     xccl_mhba_team_t     *team      = request->team;
+    gettimeofday(&team->send[request->seq_num], NULL);
     size_t                len       = request->args.buffer_info.len;
     int                   index     = SEQ_INDEX(request->seq_num);
     int                   node_size = team->node.sbgp->group_size;
