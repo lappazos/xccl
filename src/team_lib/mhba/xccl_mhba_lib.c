@@ -192,6 +192,7 @@ static xccl_status_t xccl_mhba_collective_finalize(xccl_tl_coll_req_t *request)
     xccl_mhba_coll_req_t *req  = ucs_derived_of(request, xccl_mhba_coll_req_t);
     xccl_mhba_team_t     * team = req->team;
     gettimeofday(&team->end[req->seq_num], NULL);
+    //printf("end time is %lu %lu",team->end[req->seq_num].tv_usec,team->end[req->seq_num].tv_sec);
     team->previous_msg_size[SEQ_INDEX(req->seq_num)] = req->args.buffer_info.len;
     team->previous_send_address[SEQ_INDEX(req->seq_num)] = req->send_rcache_region_p->mr->addr;
     team->previous_recv_address[SEQ_INDEX(req->seq_num)] = req->recv_rcache_region_p->mr->addr;

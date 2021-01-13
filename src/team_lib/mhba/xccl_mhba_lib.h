@@ -144,11 +144,11 @@ typedef struct xccl_mhba_team {
     uint64_t             max_msg_size;
     xccl_mhba_node_t     node;
     xccl_mhba_net_t      net;
-    struct timeval                  fanin[10000];
-    struct timeval                  block[10000];
-    struct timeval                  send[10000];
-    struct timeval                  fanout[10000];
-    struct timeval                  end[10000];
+    struct timeval                  fanin[90000];
+    struct timeval                  block[90000];
+    struct timeval                  send[90000];
+    struct timeval                  fanout[90000];
+    struct timeval                  end[90000];
     int                  sequence_number;
     int                  op_busy[MAX_OUTSTANDING_OPS];
     int                  cq_completions[MAX_OUTSTANDING_OPS];

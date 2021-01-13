@@ -475,7 +475,7 @@ xccl_status_t xccl_mhba_team_destroy(xccl_tl_team_t *team)
 {
     xccl_status_t     status    = XCCL_OK;
     xccl_mhba_team_t *mhba_team = ucs_derived_of(team, xccl_mhba_team_t);
-
+//printf("seq num is %d\n",mhba_team->sequence_number);
     int               i;
     xccl_mhba_debug("destroying team %p", team);
     ucs_rcache_destroy(mhba_team->rcache);
@@ -490,20 +490,24 @@ xccl_status_t xccl_mhba_team_destroy(xccl_tl_team_t *team)
     if (mhba_team->node.asr_rank == mhba_team->node.sbgp->group_rank) {
         double fanin=0, fanout=0, block=0, send=0;
         int p;
-        for(p=0;p<mhba_team->sequence_number;p++){
-            fanin += mhba_team->block[p].tv_usec - mhba_team->fanin[p].tv_usec + 1000000*(mhba_team->block[p].tv_sec - mhba_team->fanin[p].tv_sec);
-            block += mhba_team->send[p].tv_usec - mhba_team->block[p].tv_usec + 1000000*(mhba_team->send[p].tv_sec - mhba_team->block[p].tv_sec);
-            send += mhba_team->fanout[p].tv_usec - mhba_team->send[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->send[p].tv_sec);
-            fanout += mhba_team->end[p].tv_usec - mhba_team->fanout[p].tv_usec + 1000000*(mhba_team->end[p].tv_sec - mhba_team->fanout[p].tv_sec);
+        for(p=48000;p<mhba_team->sequence_number;p++){
+            fanin +=(double) mhba_team->block[p].tv_usec - mhba_team->fanin[p].tv_usec + 1000000*(mhba_team->block[p].tv_sec - mhba_team->fanin[p].tv_sec);
+ //printf("fanin temp is %lu\n",fanin);
+ 	    block += (double)mhba_team->send[p].tv_usec - mhba_team->block[p].tv_usec + 1000000*(mhba_team->send[p].tv_sec - mhba_team->block[p].tv_sec);
+          //printf("block temp is %lu\n",block);
+
+	    send += (double)mhba_team->fanout[p].tv_usec - mhba_team->send[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->send[p].tv_sec);
+            fanout += (double)mhba_team->end[p].tv_usec - mhba_team->fanout[p].tv_usec + 1000000*(mhba_team->end[p].tv_sec - mhba_team->fanout[p].tv_sec);
         }
-        fanin = fanin / mhba_team->sequence_number;
-        block=block/mhba_team->sequence_number;
-        send=send/mhba_team->sequence_number;
-        fanout=fanout/mhba_team->sequence_number;
-        printf("asr fanin %lu us\n",fanin);
-        printf("asr block %lu us\n",block);
-        printf("asr send %lu us\n",send);
-        printf("asr fanout %lu us\n",fanout);
+        fanin = fanin / 6000;
+        block=block/6000;
+        send=send/6000;
+        fanout=fanout/6000;
+	//printf("%lu, %lu, %lu, %lu\n",fanin,block,send,fanout);
+        printf("asr fanin %.1f us block %.1f us send %.1f us fanout %.1f us\n\n",fanin,block,send,fanout);
+        //printf("asr block %f us\n",block);
+        //printf("asr send %f us\n",send);
+        //printf("asr fanout %f us\n",fanout);
         status = xccl_mhba_destroy_umr(&mhba_team->node);
         if (status != XCCL_OK) {
             xccl_mhba_error("failed to destroy UMR");
@@ -536,14 +540,13 @@ xccl_status_t xccl_mhba_team_destroy(xccl_tl_team_t *team)
     else{
         double fanin=0, fanout=0;
         int p;
-        for(p=0;p<mhba_team->sequence_number;p++){
-            fanin += mhba_team->fanout[p].tv_usec - mhba_team->fanin[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->fanin[p].tv_sec);
-            fanout += mhba_team->end[p].tv_usec - mhba_team->fanout[p].tv_usec + 1000000*(mhba_team->end[p].tv_sec - mhba_team->fanout[p].tv_sec);
+        for(p=48000;p<mhba_team->sequence_number;p++){
+            fanin += (double)mhba_team->fanout[p].tv_usec - mhba_team->fanin[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->fanin[p].tv_sec);
+            fanout += (double)mhba_team->end[p].tv_usec - mhba_team->fanout[p].tv_usec + 1000000*(mhba_team->end[p].tv_sec - mhba_team->fanout[p].tv_sec);
         }
-        fanin = fanin / mhba_team->sequence_number;
-        fanout=fanout/mhba_team->sequence_number;
-        printf("fanin %lu us\n",fanin);
-        printf("fanout %lu us\n",fanout);
+        fanin = fanin / 6000;
+        fanout=fanout/6000;
+        //printf("fanin %.1f us fanout %.1f us\n\n",fanin,fanout);
     }
     free(team);
     return status;
