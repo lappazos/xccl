@@ -281,7 +281,7 @@ xccl_status_t xccl_mhba_team_create_post(xccl_tl_context_t  *context,
             xccl_mhba_error("Failed to init UMR");
             goto fail_after_transpose_reg;
         }
-        asr_cq_size       = net_size * MAX_OUTSTANDING_OPS;
+        asr_cq_size       = net_size * MAX_OUTSTANDING_OPS*20;
         mhba_team->net.cq = ibv_create_cq(mhba_team->node.shared_ctx,
                                           asr_cq_size, NULL, NULL, 0);
         if (!mhba_team->net.cq) {
@@ -514,11 +514,11 @@ xccl_status_t xccl_mhba_team_destroy(xccl_tl_team_t *team)
         }
 	//printf("%lu, %lu, %lu, %lu\n",fanin,block,send,fanout);
         printf("asr fanin %.1f us block %.1f us send %.1f us progress %.1f us fanout %.1f us\n",fanin,block,send,progress,fanout);
-        printf("atomics ")
+        printf("atomics ");
         for(m=0;m<8;m++){
             printf("%.1f us ",atomics[m]);
         }
-        printf("\n");
+        printf("\n\n");
         //printf("asr block %f us\n",block);
         //printf("asr send %f us\n",send);
         //printf("asr fanout %f us\n",fanout);

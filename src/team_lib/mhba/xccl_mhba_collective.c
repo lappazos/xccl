@@ -234,7 +234,7 @@ static inline xccl_status_t send_block_data(struct ibv_qp *qp,
                                             uint64_t       src_addr,
                                             uint32_t msg_size, uint32_t lkey,
                                             uint64_t remote_addr, uint32_t rkey,
-                                            int send_flags, int with_imm)
+                                            int send_flags, int with_imm,xccl_mhba_coll_req_t *request)
 {
     struct ibv_send_wr *bad_wr;
     struct ibv_sge      list = {
@@ -244,7 +244,7 @@ static inline xccl_status_t send_block_data(struct ibv_qp *qp,
     };
 
     struct ibv_send_wr wr = {
-        .wr_id      = 1,
+        .wr_id      = request->seq_num,
         .sg_list    = &list,
         .num_sge    = 1,
         .opcode     = with_imm ? IBV_WR_RDMA_WRITE_WITH_IMM : IBV_WR_RDMA_WRITE,
@@ -276,7 +276,7 @@ static inline xccl_status_t send_atomic(struct ibv_qp *qp, uint64_t remote_addr,
         .sg_list               = &list,
         .num_sge               = 1,
         .opcode                = IBV_WR_ATOMIC_FETCH_AND_ADD,
-        .send_flags            = IBV_SEND_SIGNALED,
+        .send_flags            = 0,
         .wr.atomic.remote_addr = remote_addr,
         .wr.atomic.rkey        = rkey,
         .wr.atomic.compare_add = 1ULL,
@@ -366,7 +366,7 @@ xccl_mhba_send_blocks_start_with_transpose(xccl_coll_task_t *task)
                     team->node.umr_qp, src_addr, block_msgsize,
                     team->node.team_send_mkey->lkey,
                     (uintptr_t)request->transpose_buf_mr->addr,
-                    request->transpose_buf_mr->rkey, IBV_SEND_SIGNALED, 1);
+                    request->transpose_buf_mr->rkey, IBV_SEND_SIGNALED, 1,request);
                 if (status != XCCL_OK) {
                     xccl_mhba_error(
                         "Failed sending block to transpose buffer[%d,%d,%d]", i, j, k);
@@ -394,7 +394,7 @@ xccl_mhba_send_blocks_start_with_transpose(xccl_coll_task_t *task)
                     team->net.qps[i],
                     (uintptr_t)request->transpose_buf_mr->addr, block_msgsize,
                     request->transpose_buf_mr->lkey, remote_addr,
-                    team->net.rkeys[i], IBV_SEND_SIGNALED, 0);
+                    team->net.rkeys[i], IBV_SEND_SIGNALED, 0,request);
                 if (status != XCCL_OK) {
                     xccl_mhba_error("Failed sending block [%d,%d,%d]", i, j, k);
                     return status;
@@ -454,7 +454,7 @@ static xccl_status_t xccl_mhba_send_blocks_start(xccl_coll_task_t *task)
 
                 status = send_block_data(team->net.qps[i], src_addr, block_msgsize,
                                          team->node.team_send_mkey->lkey,
-                                         remote_addr, team->net.rkeys[i], 0, 0);
+                                         remote_addr, team->net.rkeys[i], IBV_SEND_SIGNALED, 0,request);
                 if (status != XCCL_OK) {
                     xccl_mhba_error("Failed sending block [%d,%d,%d]", i, j, k);
                     return status;
@@ -481,7 +481,7 @@ xccl_status_t xccl_mhba_send_blocks_progress(xccl_coll_task_t *task)
     xccl_mhba_coll_req_t *request = self->req;
     xccl_mhba_team_t     *team    = request->team;
     int                   i, completions_num;
-    completions_num = ibv_poll_cq(team->net.cq, team->net.sbgp->group_size,
+    completions_num = ibv_poll_cq(team->net.cq, team->net.sbgp->group_size*,
                                   team->work_completion);
     if (completions_num < 0) {
         xccl_mhba_error("ibv_poll_cq() failed for RDMA_ATOMIC execution");
@@ -498,7 +498,7 @@ xccl_status_t xccl_mhba_send_blocks_progress(xccl_coll_task_t *task)
         team->cq_completions[SEQ_INDEX(team->work_completion[i].wr_id)] += 1;
     }
     if (team->cq_completions[SEQ_INDEX(request->seq_num)] ==
-        team->net.sbgp->group_size) {
+        team->net.sbgp->group_size*xccl_round_up(team->node.sbgp->group_size, request->block_size)*xccl_round_up(team->node.sbgp->group_size, request->block_size)) {
         task->state = XCCL_TASK_STATE_COMPLETED;
         team->cq_completions[SEQ_INDEX(request->seq_num)] = 0;
     }
