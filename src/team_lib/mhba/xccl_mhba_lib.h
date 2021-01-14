@@ -149,6 +149,8 @@ typedef struct xccl_mhba_team {
     struct timeval                  send[90000];
     struct timeval                  fanout[90000];
     struct timeval                  end[90000];
+    struct timeval                  progress[90000];
+    struct timeval                  atomics[90000][8];
     int                  sequence_number;
     int                  op_busy[MAX_OUTSTANDING_OPS];
     int                  cq_completions[MAX_OUTSTANDING_OPS];

@@ -471,6 +471,7 @@ static xccl_status_t xccl_mhba_send_blocks_start(xccl_coll_task_t *task)
         }
     }
     xccl_task_enqueue(task->schedule->tl_ctx->pq, task);
+    gettimeofday(&team->progress[request->seq_num], NULL);
     return XCCL_OK;
 }
 
@@ -487,6 +488,7 @@ xccl_status_t xccl_mhba_send_blocks_progress(xccl_coll_task_t *task)
         return XCCL_ERR_NO_MESSAGE;
     }
     for (i = 0; i < completions_num; i++) {
+        gettimeofday(&team->atomics[request->seq_num][team->cq_completions[SEQ_INDEX(team->work_completion[i].wr_id)]], NULL);
         if (team->work_completion[i].status != IBV_WC_SUCCESS) {
             xccl_mhba_error("atomic CQ returned completion with status %s (%d)",
                             ibv_wc_status_str(team->work_completion[i].status),

@@ -488,23 +488,37 @@ xccl_status_t xccl_mhba_team_destroy(xccl_tl_team_t *team)
         xccl_mhba_error("failed removing shared ctx & pd");
     }
     if (mhba_team->node.asr_rank == mhba_team->node.sbgp->group_rank) {
-        double fanin=0, fanout=0, block=0, send=0;
-        int p;
+        double fanin=0, fanout=0, block=0, send=0, progress=0;
+        double atomics[8] = {0};
+        int p,m;
         for(p=48000;p<mhba_team->sequence_number;p++){
             fanin +=(double) mhba_team->block[p].tv_usec - mhba_team->fanin[p].tv_usec + 1000000*(mhba_team->block[p].tv_sec - mhba_team->fanin[p].tv_sec);
  //printf("fanin temp is %lu\n",fanin);
  	    block += (double)mhba_team->send[p].tv_usec - mhba_team->block[p].tv_usec + 1000000*(mhba_team->send[p].tv_sec - mhba_team->block[p].tv_sec);
           //printf("block temp is %lu\n",block);
 
-	    send += (double)mhba_team->fanout[p].tv_usec - mhba_team->send[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->send[p].tv_sec);
+	    send += (double)mhba_team->progress[p].tv_usec - mhba_team->send[p].tv_usec + 1000000*(mhba_team->progress[p].tv_sec - mhba_team->send[p].tv_sec);
             fanout += (double)mhba_team->end[p].tv_usec - mhba_team->fanout[p].tv_usec + 1000000*(mhba_team->end[p].tv_sec - mhba_team->fanout[p].tv_sec);
+            progress += (double)mhba_team->fanout[p].tv_usec - mhba_team->progress[p].tv_usec + 1000000*(mhba_team->fanout[p].tv_sec - mhba_team->progress[p].tv_sec);
+            for(m=0;m<8;m++){
+                atomics[m] +=(double)mhba_team->atomics[p][m].tv_usec - mhba_team->progress[p].tv_usec + 1000000*(mhba_team->atomics[p][m].tv_sec - mhba_team->progress[p].tv_sec);
+            }
         }
         fanin = fanin / 6000;
         block=block/6000;
         send=send/6000;
         fanout=fanout/6000;
+        progress=progress/6000;
+        for(m=0;m<8;m++){
+            atomics[m] =atomics[m]/6000;
+        }
 	//printf("%lu, %lu, %lu, %lu\n",fanin,block,send,fanout);
-        printf("asr fanin %.1f us block %.1f us send %.1f us fanout %.1f us\n\n",fanin,block,send,fanout);
+        printf("asr fanin %.1f us block %.1f us send %.1f us progress %.1f us fanout %.1f us\n",fanin,block,send,progress,fanout);
+        printf("atomics ")
+        for(m=0;m<8;m++){
+            printf("%.1f us ",atomics[m]);
+        }
+        printf("\n");
         //printf("asr block %f us\n",block);
         //printf("asr send %f us\n",send);
         //printf("asr fanout %f us\n",fanout);
