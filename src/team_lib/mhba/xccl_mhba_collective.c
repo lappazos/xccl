@@ -481,7 +481,7 @@ xccl_status_t xccl_mhba_send_blocks_progress(xccl_coll_task_t *task)
     xccl_mhba_coll_req_t *request = self->req;
     xccl_mhba_team_t     *team    = request->team;
     int                   i, completions_num;
-    completions_num = ibv_poll_cq(team->net.cq, team->net.sbgp->group_size*,
+    completions_num = ibv_poll_cq(team->net.cq, team->net.sbgp->group_size*xccl_round_up(team->node.sbgp->group_size, request->block_size)*xccl_round_up(team->node.sbgp->group_size, request->block_size),
                                   team->work_completion);
     if (completions_num < 0) {
         xccl_mhba_error("ibv_poll_cq() failed for RDMA_ATOMIC execution");
@@ -497,7 +497,7 @@ xccl_status_t xccl_mhba_send_blocks_progress(xccl_coll_task_t *task)
         }
         team->cq_completions[SEQ_INDEX(team->work_completion[i].wr_id)] += 1;
     }
-    if (team->cq_completions[SEQ_INDEX(request->seq_num)] ==
+    if (team->cq_completions[request->index] ==
         team->net.sbgp->group_size*xccl_round_up(team->node.sbgp->group_size, request->block_size)*xccl_round_up(team->node.sbgp->group_size, request->block_size)) {
         task->state = XCCL_TASK_STATE_COMPLETED;
         team->cq_completions[SEQ_INDEX(request->seq_num)] = 0;
@@ -562,6 +562,7 @@ xccl_status_t xccl_mhba_alltoall_init(xccl_coll_op_args_t  *coll_args,
         return XCCL_ERR_NO_MEMORY;
     }
     request->seq_num = team->sequence_number;
+    request->index = SEQ_INDEX(request->seq_num);
     xccl_mhba_debug("Seq num is %d", request->seq_num);
     team->sequence_number++;
 
